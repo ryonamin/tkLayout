@@ -1534,7 +1534,11 @@ namespace insur {
     for (iter = sp.begin(); iter != guard; iter++) {
       std::ostringstream matname, shapename;
       matname << xml_base_lazycomp << iter->getCategory();
+#if 0
       shapename << xml_base_lazy /*<< any2str(iter->getCategory()) */<< "R" << (int)(iter->getInnerRadius()) << "Z" << (int)(fabs(iter->getZOffset()));
+#else
+      shapename << xml_base_lazy /*<< any2str(iter->getCategory()) */<< "R" << (int)(iter->getInnerRadius()) << "Z" << (int)(iter->getZLength() / 2.0 + iter->getZOffset());
+#endif
 
       fres = found.find(iter->getCategory());
 #if 0
