@@ -79,6 +79,24 @@ namespace insur {
     rot.phiz = 0.0;
     r.push_back(rot);
 
+#if 1 //DEV
+    rot.name = rot_module_tag;
+#if 1  // Rotate around Y axis case
+    rot.thetax = 90.0;
+    rot.phix   = 180.0;
+    rot.thetay = 90.0;
+    rot.phiy   = 90.0;
+#else  // Rotate around X axis case
+    rot.thetax = 90.0;
+    rot.phix   = 0.0;
+    rot.thetay = 90.0;
+    rot.phiy   = 270.0;
+#endif
+    rot.thetaz = 180.0;
+    rot.phiz   = 0.0;
+    r.push_back(rot);
+#endif
+
 #if defined(__FLIPSENSORS_IN__) || defined(__FLIPSENSORS_OUT__)
     rot.name = rot_sensor_tag;
 #if 1  // Fix Y axis case
@@ -479,6 +497,12 @@ namespace insur {
     lagg.postVisit();
     std::vector<std::vector<ModuleCap> >& bc = lagg.getBarrelCap();
     oguard = bc.end();
+#if 0 //DEV
+      std::vector<double> rmin_expanded[6];
+      std::vector<double> rmax_expanded[6];
+      std::vector<double> zmin_expanded[6];
+      std::vector<double> zmax_expanded[6];
+#endif
 
     // barrel caps layer loop
     for (oiter = bc.begin(); oiter != oguard; oiter++) {
@@ -626,8 +650,24 @@ namespace insur {
 
 #ifdef __ADDVOLUMES__ 
             std::string moduleName = shape.name_tag; // e.g. BModule1Layer1
-            ModuleComplex modcomplex(moduleName,*iiter);
+#if 1 //DEV
+            std::string parentName = shape.name_tag; // e.g. BModule1Layer1
+            ModuleComplex modcomplex(moduleName,parentName,*iiter);
+#endif
             modcomplex.buildSubVolumes();
+//DEV
+            //std::cerr << "rmin = " << modcomplex.getRmin() << std::endl;
+            // Need only once?
+            //std::cerr << "layer = " << layer << std::endl;
+            //rmin_expanded[layer-1].push_back(modcomplex.getRmin());
+            //rmax_expanded[layer-1].push_back(modcomplex.getRmax());
+            //zmin_expanded[layer-1].push_back(modcomplex.getZmin());
+            //zmax_expanded[layer-1].push_back(modcomplex.getZmax());
+//std::cerr << "moduleName " << moduleName  
+//          << " rmin_expanded = " << rmin_expanded 
+//          << " rmax_expanded = " << rmax_expanded 
+//          << " zmin_expanded = " << zmin_expanded 
+//          << " zmax_expanded = " << zmax_expanded << std::endl; 
 #endif
 
             // wafer
@@ -780,8 +820,28 @@ namespace insur {
         if (is_short) shape.name_tag = shape.name_tag + xml_plus;
         shape.dy = shape.dx;
         shape.dx = rodThickness / 2.0;
+#if 1 // DEV
         if (is_short) shape.dz = (zmax - zmin) / 2.0;
         else shape.dz = zmax;
+#if 0
+for (unsigned int i = 0; i < zmin_expanded[layer-1].size(); i++) {
+  std::cerr << zmin_expanded[layer-1].at(i) << " ";
+}
+std::cerr << std::endl;
+std::sort(zmin_expanded[layer-1].begin(),zmin_expanded[layer-1].end());
+std::cerr << "zmin_expanded["<<layer-1<<"] = " << zmin_expanded[layer-1][0] << std::endl;
+#endif
+#else
+//std::cerr << "layer = " << layer << endl;
+//std::sort(zmin.begin(),zmin.end());
+///std::cerr << "zmin = " << zmin[0] << std::endl;
+//std::cerr << "### zmax = " << zmax << " zmin = " << zmin << " zmax_expanded = " << zmax_expanded 
+//                                   << " zmin_expanded = " << zmin_expanded << std::endl; 
+//std::cerr << "### rmax = " << rmax << " rmin = " << rmin << " rmax_expanded = " << rmax_expanded 
+//                                   << " rmin_expanded = " << rmin_expanded << std::endl; 
+//        if (is_short) shape.dz = (zmax_expanded - zmin_expanded) / 2.0;
+//        else shape.dz = zmax_expanded;
+#endif
         s.push_back(shape);
         logic.name_tag = shape.name_tag;
         logic.shape_tag = nspace + ":" + logic.name_tag;
@@ -835,8 +895,13 @@ namespace insur {
         pos.trans.dx = 0.0;
         pos.trans.dz = 0.0;
         shape.name_tag = lname.str();
+#if 1 //DEV
         shape.rmin = rmin;
         shape.rmax = rmax;
+#else
+        shape.rmin = rmin_expanded;
+        shape.rmax = rmax_expanded;
+#endif
         shape.dz = zmax;
         s.push_back(shape);
         logic.name_tag = shape.name_tag;
@@ -860,14 +925,26 @@ namespace insur {
         alg.parameters.push_back(numericParam(xml_startangle, pconverter.str()));
         pconverter.str("");
         alg.parameters.push_back(numericParam(xml_rangeangle, "360*deg"));
+#if 1 //DEV
         pconverter << (rmin + deltar / 2.0) << "*mm";
+#else
+        pconverter << (rmin_expanded + deltar / 2.0) << "*mm";
+#endif
         alg.parameters.push_back(numericParam(xml_radiusin, pconverter.str()));
         pconverter.str("");
+#if 1 //DEV
         pconverter << (rmax - ds - deltar / 2.0 - 2.0 * dt) << "*mm";
+#else
+        pconverter << (rmax_expanded - ds - deltar / 2.0 - 2.0 * dt) << "*mm";
+#endif
         alg.parameters.push_back(numericParam(xml_radiusout, pconverter.str()));
         pconverter.str("");
         if (!wt && is_short) {
+#if 1 //DEV
           pconverter << (zmin + (zmax - zmin) / 2.0) << "*mm";
+#else
+          pconverter << (zmin_expanded + (zmax_expanded - zmin_expanded) / 2.0) << "*mm";
+#endif
           alg.parameters.push_back(numericParam(xml_zposition, pconverter.str()));
           pconverter.str("");
         }
@@ -885,7 +962,11 @@ namespace insur {
           alg.parameters.front() = stringParam(xml_childparam, pconverter.str());
           pconverter.str("");
           if (wt) pconverter << "0.0*mm";
+#if 1 //DEV
           else pconverter << -(zmin + (zmax - zmin) / 2.0) << "*mm";
+#else
+          else pconverter << -(zmin_expanded + (zmax_expanded - zmin_expanded) / 2.0) << "*mm";
+#endif
           alg.parameters.at(6) = numericParam(xml_zposition, pconverter.str());
           a.push_back(alg);
         }
@@ -1039,6 +1120,34 @@ namespace insur {
             rname << xml_ring << modRing << dname.str();
             mname << xml_endcap_module << modRing << dname.str();
 
+#if 1 //DEV  Ringの前にmodulecomplexがビルドできれば話が早い。
+            if (iiter->getModule().flipped()) { // flip case
+              // We will add an additional hierarchy to rotate this module.
+              // Here we will take a naming scheme e.g.:
+              // "EModule1Disc6" for the outer shell as it was,
+              // "_EModule1Disc6" for the real content.
+              shape.name_tag = "_" + mname.str();
+
+              // Define the outer shell
+              logic.name_tag = mname.str();
+              logic.shape_tag = nspace + ":" + shape.name_tag;
+              logic.material_tag = xml_material_air;
+              pos.parent_tag = logic.name_tag;
+              pos.child_tag = shape.name_tag;
+              pos.rotref = nspace + ":" + rot_module_tag;
+              l.push_back(logic);
+              p.push_back(pos);
+              pos.rotref.clear();
+            } else {
+              shape.name_tag = mname.str();
+            }
+
+            std::string moduleName = mname.str();    // e.g. EModule1Disc6
+            std::string parentName = shape.name_tag; // e.g. EModule1Disc6 / _EModule1Disc6
+            ModuleComplex modcomplex(moduleName,parentName,*iiter);
+            modcomplex.buildSubVolumes();
+#endif 
+
             // collect ring info
             RingInfo rinf;
             rinf.name = rname.str();
@@ -1048,8 +1157,13 @@ namespace insur {
             //rinf.modules = lagg.getEndcapLayers()->at(layer - 1)->rings().at(modRing).numModules();
             rinf.modules = lagg.getEndcapLayers()->at(layer - 1)->ringsMap().at(modRing)->numModules();
 
+#if 0 //DEV
             rinf.rin = iiter->getModule().minR();
             rinf.rout = iiter->getModule().maxR();
+#else
+            rinf.rin  = modcomplex.getRmin();
+            rinf.rout = modcomplex.getRmax();
+#endif
             rinf.rmid = iiter->getModule().center().Rho();
             rinf.mthk = iiter->getModule().thickness();
             rinf.phi = iiter->getModule().center().Phi();
@@ -1059,7 +1173,34 @@ namespace insur {
 
             shape.type = iiter->getModule().shape() == RECTANGULAR ? bx : tp;
 
+#if 0 //DEV
             shape.name_tag = mname.str();
+#else
+       //     if (iiter->getModule().flipped()) { // flip case
+       //       // We will add an additional hierarchy to rotate this module.
+       //       // Here we will take a naming scheme e.g.:
+       //       // "EModule1Disc6" for the outer shell as it was,
+       //       // "_EModule1Disc6" for the real content.
+       //       shape.name_tag = "_" + mname.str();
+
+       //       // Define the outer shell
+       //       logic.name_tag = mname.str();
+       //       logic.shape_tag = nspace + ":" + shape.name_tag;
+       //       logic.material_tag = xml_material_air;
+       //       pos.parent_tag = logic.name_tag;
+       //       pos.child_tag = shape.name_tag;
+       //       pos.rotref = nspace + ":" + rot_module_tag;
+       //       l.push_back(logic);
+       //       p.push_back(pos);
+       //       pos.rotref.clear();
+       //     } else {
+       //       shape.name_tag = mname.str();
+       //     }
+
+            // Now we will make the module contents (sensors, hybrids, ...)
+            // Note that now shape.name_tag is e.g. "EModule1Disc6" for non-flipped case
+            //                                      "_EModule1Disc6" for flipped case
+#endif
 #ifndef __ADDVOLUMES__
             shape.dx = iiter->getModule().minWidth() / 2.0;
             shape.dxx = iiter->getModule().maxWidth() / 2.0;
@@ -1096,9 +1237,12 @@ namespace insur {
             l.push_back(logic);
 
 #ifdef __ADDVOLUMES__ 
-            std::string moduleName = shape.name_tag; // e.g. BModule1Layer1
-            ModuleComplex modcomplex(moduleName,*iiter);
-            modcomplex.buildSubVolumes();
+#if 1 //DEV
+            //std::string moduleName = mname.str();    // e.g. EModule1Disc6
+            //std::string parentName = shape.name_tag; // e.g. EModule1Disc6 / _EModule1Disc6
+            //ModuleComplex modcomplex(moduleName,parentName,*iiter);
+#endif
+            //modcomplex.buildSubVolumes();
 #endif
 
 
@@ -1271,6 +1415,11 @@ namespace insur {
           if (rinfo[*siter].modules > 0) {
 
             shape.name_tag = rinfo[*siter].name;
+#if 0 //DEV
+            std::cerr << "rinfo[*siter].name = " << rinfo[*siter].name << " "
+                      << "rinfo[*siter].rin = "  << rinfo[*siter].rin  << " "
+                      << "rinfo[*siter].rout = "  << rinfo[*siter].rout  << std::endl; 
+#endif
             shape.rmin = rinfo[*siter].rin;
             shape.rmax = rinfo[*siter].rout;
             s.push_back(shape);
@@ -1924,8 +2073,12 @@ namespace insur {
 
   const double ModuleComplex::kmm3Tocm3 = 1e-3; 
 
+#if 1 //DEV
   ModuleComplex::ModuleComplex(std::string moduleName,
+                               std::string parentName,
                                ModuleCap&  modcap        ) : moduleId(moduleName),
+                                                             parentId(parentName),
+#endif
                                                              modulecap(modcap),
                                                              module(modcap.getModule()),
                                                              modWidth(module.area()/module.length()),
@@ -1942,6 +2095,10 @@ namespace insur {
                                                              hybridFrontAndBackVolume_mm3(-1.),
                                                              hybridLeftAndRightVolume_mm3(-1.),
                                                              moduleMassWithoutSensors_expected(0.),
+                                                             rmin(0.),
+                                                             rmax(0.),
+                                                             zmin(0.),
+                                                             zmax(0.),
                                                              prefix_xmlfile("tracker:"),
                                                              prefix_material("hybridcomposite") {
   }
@@ -1974,6 +2131,12 @@ namespace insur {
   //  B(4) and F(3) are Service Hybdrids
   //
   //
+ 
+#if 1 //DEV
+    double expandedModWidth = modWidth+2*serviceHybridWidth;
+    double expandedModLength = modLength+2*frontEndHybridWidth;
+#endif
+
     Volume* vol[nTypes];
     //Unused pointers
     vol[HybridFBLR_0] = 0;
@@ -1987,13 +2150,13 @@ namespace insur {
     double posy = 0.;
     double posz = 0.;
     // Hybrid FrontSide Volume
-    vol[HybridFront] = new Volume(moduleId+"FSide",HybridFront,moduleId,dx,dy,dz,posx,posy,posz);
+    vol[HybridFront] = new Volume(moduleId+"FSide",HybridFront,parentId,dx,dy,dz,posx,posy,posz);
 
     posx = -(modWidth+serviceHybridWidth)/2.;
     posy = 0.;
     posz = 0.;
     // Hybrid BackSide Volume
-    vol[HybridBack] = new Volume(moduleId+"BSide",HybridBack,moduleId,dx,dy,dz,posx,posy,posz);
+    vol[HybridBack] = new Volume(moduleId+"BSide",HybridBack,parentId,dx,dy,dz,posx,posy,posz);
 
     dx = modWidth+2*serviceHybridWidth;  
     dy = frontEndHybridWidth;
@@ -2001,13 +2164,13 @@ namespace insur {
     posy = (modLength+frontEndHybridWidth)/2.;
     posz = 0.;
     // Hybrid LeftSide Volume
-    vol[HybridLeft] = new Volume(moduleId+"LSide",HybridLeft,moduleId,dx,dy,dz,posx,posy,posz);
+    vol[HybridLeft] = new Volume(moduleId+"LSide",HybridLeft,parentId,dx,dy,dz,posx,posy,posz);
 
     posx = 0.;
     posy = -(modLength+frontEndHybridWidth)/2.;
     posz = 0.;
     // Hybrid RightSide Volume
-    vol[HybridRight] = new Volume(moduleId+"RSide",HybridRight,moduleId,dx,dy,dz,posx,posy,posz);
+    vol[HybridRight] = new Volume(moduleId+"RSide",HybridRight,parentId,dx,dy,dz,posx,posy,posz);
 
     dx = modWidth; 
     dy = modLength; 
@@ -2015,16 +2178,95 @@ namespace insur {
     posy = 0.;
     posz = 0.;
     // Hybrid Between Volume
-    vol[HybridBetween] = new Volume(moduleId+"Between",HybridBetween,moduleId,dx,dy,dz,posx,posy,posz);
+    vol[HybridBetween] = new Volume(moduleId+"Between",HybridBetween,parentId,dx,dy,dz,posx,posy,posz);
 
     dx = modWidth+2*serviceHybridWidth;  
     dy = modLength+2*frontEndHybridWidth; 
     dz = supportPlateThickness; 
     posx = 0.;
     posy = 0.;
+#if 0 // DEV
     posz = - ( sensorDistance + sensorThickness + supportPlateThickness )/2.; 
+#else // FIXME
+    posz = - ( sensorDistance + supportPlateThickness )/2. + sensorThickness; 
+#endif
     // SupportPlate
-    vol[SupportPlate] = new Volume(moduleId+"SupportPlate",SupportPlate,moduleId,dx,dy,dz,posx,posy,posz);
+    vol[SupportPlate] = new Volume(moduleId+"SupportPlate",SupportPlate,parentId,dx,dy,dz,posx,posy,posz);
+
+#if 1 //DEV
+
+    //std::cerr << "modWidth = " << modWidth << " modLength = " << modLength << std::endl;
+    //for (int i = 0; i < 4; i++ ) {
+    //  std::cerr << "v" << i << " = (" << module.basePoly().getVertex(i).X() << ", " 
+    //                                  << module.basePoly().getVertex(i).Y() << ", " 
+    //                                  << module.basePoly().getVertex(i).Z() << ")" << endl;
+    //}
+    
+    vector<double> rv;
+    vector<double> zv;
+    const int npoints = 5; // 4+1
+    const int tb = 2; // top or bottom 
+    XYZVector v[npoints];
+    XYZVector mv[2];
+    XYZVector v2[tb][npoints];
+    for (int i = 0; i < 2; i++) {
+      mv[i] = 0.5*( module.basePoly().getVertex(i) + module.basePoly().getVertex(i+1) ) - module.center() ;
+      //std::cerr << "mv[" << i << "] = (" << mv[i].X() << ", "
+      //                                   << mv[i].Y() << ", "
+      //                                   << mv[i].Z() << ")" << std::endl;
+    }
+    v[0] = module.center() + (expandedModWidth/modWidth)*mv[0] - (expandedModLength/modLength)*mv[1]; 
+    v[1] = module.center() + (expandedModWidth/modWidth)*mv[0] + (expandedModLength/modLength)*mv[1]; 
+    v[2] = module.center() - (expandedModWidth/modWidth)*mv[0] + (expandedModLength/modLength)*mv[1]; 
+    v[3] = module.center() - (expandedModWidth/modWidth)*mv[0] - (expandedModLength/modLength)*mv[1]; 
+    v[4] = v[0];
+
+    //for (int i = 0; i < 4; i++ ) {
+    //  std::cerr << "new v" << i << " = (" << v[i].X() << ", " 
+    //                                      << v[i].Y() << ", " 
+    //                                      << v[i].Z() << ")" << endl;
+    //}
+
+    for (int itb = 0; itb < tb; itb++) {
+      for (int ip = 0; ip < npoints-1; ip++) {
+        v2[itb][ip] = v[ip] + (modThickness)*(itb-0.5)*module.normal();
+        zv.push_back(v2[itb][ip].Z());
+        v2[itb][ip].SetZ(0.); // projection to xy plain.
+        rv.push_back(v2[itb][ip].R());
+        //std::cerr << "v2[" << itb << "][" << ip << "].R() = " << v2[itb][ip].R() << std::endl;
+      }
+      v2[itb][npoints-1] = v2[itb][0];
+    }
+
+    XYZVector mp[tb][npoints-1];
+    XYZVector mpm[tb][npoints-1];
+    for (int itb = 0; itb < tb; itb++ ) {
+      for (int ip = 0; ip < npoints-1; ip++) {
+        mp[itb][ip] = v2[itb][ip]-v2[itb][ip+1];
+        if ( mp[itb][ip].Dot(v2[itb][ip]) * mp[itb][ip].Dot(v2[itb][ip+1]) < 0 ) { // minimum is a point divided internally 
+          mpm[itb][ip] = v2[itb][ip]-mp[itb][ip].Unit().Dot(v2[itb][ip])*mp[itb][ip].Unit();
+          rv.push_back(mpm[itb][ip].R());
+        }
+      }
+    }
+    
+  sort(rv.begin(),rv.end());
+  sort(zv.begin(),zv.end());
+  
+  rmin = rv.at(0);
+  rmax = rv.back();
+  zmin = zv.at(0);
+  zmax = zv.back();
+
+  //cerr << moduleId << " rmin=" <<rmin << ", rmax=" << rmax << ", zmin=" 
+  //     << zmin << ", zmax=" << zmax << endl;
+    //std::cerr << "norm = (" << module.normal().X() << ", " 
+    //          << module.normal().Y() << ", " 
+    //          << module.normal().Z() << ")" 
+    //          << endl;
+    //XYZVector norm = module.normal();
+    //std::cerr << norm.Dot(v0) << endl;
+#endif
 
     ElementsVector matElements = module.getLocalElements();
     ElementsVector::const_iterator meit;
@@ -2177,7 +2419,7 @@ namespace insur {
 
   void ModuleComplex::print() const {
     std::cout << "ModuleComplex::print():" << std::endl;
-    std::cout << "  Parent Module Name:" << moduleId << std::endl;
+    std::cout << "  Parent Module Name:" << parentId << std::endl;
     std::vector<Volume*>::const_iterator vit;
     double moduleTotalMass = 0.;
     for ( vit = volumes.begin(); vit != volumes.end(); vit++ ) {

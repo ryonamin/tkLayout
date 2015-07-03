@@ -116,10 +116,15 @@ namespace insur {
   // This should be moved to tk2CMSSW_strings.h at some point.
   static const std::string rot_sensor_tag = "SensorFlip";
 #endif
+#if 1 //DEV
+  static const std::string rot_module_tag = "ModuleFlip";
+#endif
 #ifdef __ADDVOLUMES__
   class ModuleComplex {
     public :
-     ModuleComplex(std::string moduleName, ModuleCap& modcap);
+#if 1 //DEV
+     ModuleComplex(std::string moduleName, std::string parentName, ModuleCap& modcap);
+#endif
      ~ModuleComplex();
      void buildSubVolumes();
      void addShapeInfo   (std::vector<ShapeInfo>&   vec);
@@ -130,6 +135,12 @@ namespace insur {
 
      const double getServiceHybridWidth() const { return serviceHybridWidth; }
      const double getFrontEndHybridWidth() const { return frontEndHybridWidth; }
+#if 1 //DEV
+     double getRmin() const { return rmin; }
+     double getRmax() const { return rmax; }
+     double getZmin() const { return zmin; }
+     double getZmax() const { return zmax; }
+#endif
      double getHybridTotalVolume_mm3() const { return hybridTotalVolume_mm3; }
      void   setHybridTotalVolume_mm3( double v ) { hybridTotalVolume_mm3 = v; }
 
@@ -206,6 +217,9 @@ namespace insur {
       Module&              module;
       std::vector<Volume*> volumes;
       std::string          moduleId;
+#if 1 //DEV
+      std::string          parentId;
+#endif
       const double         modThickness;
       const double         sensorThickness;
       const double         sensorDistance;
@@ -220,6 +234,10 @@ namespace insur {
             double         hybridFrontAndBackVolume_mm3;
             double         hybridLeftAndRightVolume_mm3;
             double         moduleMassWithoutSensors_expected;
+            double         rmin;
+            double         rmax;
+            double         zmin;
+            double         zmax;
       const std::string    prefix_xmlfile;
       const std::string    prefix_material;
   };
